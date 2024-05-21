@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>uprak</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <style>
+    body {
+      background-color: #f5f5f5;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto;
+      gap: 10px;
+    }
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header .logo {
+      margin-right: 20px;
+    }
+    .header img {
+      height: 50px;
+    }
+    .header-title {
+      flex-grow: 1;
+      text-align: center;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input, .form-group select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    .form-group.date {
+      grid-column: 1 / -1;
+    }
+    .total-payment {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px 0;
+    }
+    .total-payment div {
+      font-size: 1.5em;
+      color: red;
+    }
+    .items-table {
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    .items-table th, .items-table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    .items-table th {
+      background-color: #f0f0f0;
+    }
+    .total {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    .total div {
+      margin-left: 20px;
+    }
+    .total input {
+      width: 120px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .submit-button {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    .submit-button button {
+      background-color: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .submit-button button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="container">
+    <div class="header">
+      <div class="logo">
+        <img src="logo thrift.png" alt="Logo">
+      </div>
+      <div class="header-title">DIDIN THRIFT STORE
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>No. Nota:</label>
+      <input type="text" v-model="nota">
+    </div>
+
+    <div class="form-group">
+      <label>Pelanggan:</label>
+      <input type="text" v-model="pelanggan">
+    </div>
+
+    <div class="form-group date">
+      <label>Tanggal:</label>
+      <input type="date" v-model="tanggal">
+    </div>
+
+    <div class="form-group">
+      <label>Kode Barang:</label>
+      <select v-model="selectedItem">
+        <option disabled value="">ID Barang</option>
+        <option v-for="item in items" :value="item">{{ item.nama }}</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Nama Barang:</label>
+      <input type="text" v-model="selectedItem.nama" disabled>
+    </div>
+
+    <div class="form-group">
+      <label>Quantity:</label>
+      <input type="number" v-model.number="quantity" min="1">
+    </div>
+
+    <div class="form-group">
+      <button @click="addItem">Add</button>
+    </div>
+
+    <div class="total-payment">
+      <div>Total Pembayaran: <strong>Rp. {{ formatCurrency(totalPembayaran) }}</strong></div>
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>ID Barang</th>
+          <th>Nama Barang</th>
+          <th>Harga Satuan</th>
+          <th>Qty</th>
+          <th>Jumlah</th>
+          <th>Opsi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, index) in invoiceItems" :key="index">
+          <td>{{ item.id }}</td>
+          <td>{{ item.nama }}</td>
+          <td>Rp. {{ formatCurrency(item.harga) }}</td>
+          <td>{{ item.qty }}</td>
+          <td>Rp. {{ formatCurrency(item.harga * item.qty) }}</td>
+          <td><button @click="removeItem(index)">Hapus</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="total">
+      <div>
+        <label>Sub Total: Rp.</label>
+        <span>{{ formatCurrency(subTotal) }}</span>
+      </div>
+      <div>
+        <label>Diskon:</label>
+        <input type="number" v-model.number="diskon" min="0" max="100"> %
+        <span>= Rp. {{ formatCurrency(diskonAmount) }}</span>
+      </div>
+      <div>
+        <label>Total Harga: Rp.</label>
+        <span>{{ formatCurrency(totalHarga) }}</span>
+      </div>
+      <div>
+        <label>Bayar: Rp.</label>
+        <input type="number" v-model.number="bayar" min="0">
+      </div>
+      <div>
+        <label>Kembalian: Rp.</label>
+        <span>{{ formatCurrency(kembalian) }}</span>
+      </div>
+    </div>
+
+    <div class="submit-button">
+      <button @click="completeTransaction">Selesai</button>
+    </div>
+  </div>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        nota: '',
+        pelanggan: '',
+        tanggal: '',
+        items: [
+          { id: '001', nama: 'Baju OverSize', harga: 100000 },
+          { id: '002', nama: 'Baju Starboy', harga: 200000 },
+          { id: '003', nama: 'Baju skena', harga: 300000 }
+        ],
+        selectedItem: '',
+        quantity: 1,
+        invoiceItems: [],
+        diskon: 0,
+        bayar: 0
+      },
+      computed: {
+        subTotal() {
+          return this.invoiceItems.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+        },
+        diskonAmount() {
+          return this.subTotal * (this.diskon / 100);
+        },
+        totalHarga() {
+          return this.subTotal - this.diskonAmount;
+        },
+        totalPembayaran() {
+          return this.totalHarga;
+        },
+        kembalian() {
+          return this.bayar - this.totalHarga;
+        }
+      },
+      methods: {
+        addItem() {
+          if (this.selectedItem && this.quantity > 0) {
+            this.invoiceItems.push({ ...this.selectedItem, qty: this.quantity });
+            this.selectedItem = '';
+            this.quantity = 1;
+          }
+        },
+        removeItem(index) {
+          this.invoiceItems.splice(index, 1);
+        },
+        completeTransaction() {
+          alert('Transaksi selesai!');
+          // Additional functionality can be added here
+        },
+        formatCurrency(value) {
+          return new Intl.NumberFormat('id-ID', {
+            style: 'decimal',
+            minimumFractionDigits: 0
+          }).format(value);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
